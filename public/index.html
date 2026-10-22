@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Global Chat</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    #globalChat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; margin-bottom: 20px; background-color: #f9f9f9; }
+    input { padding: 5px; width: 200px; margin-right: 5px; }
+    button { padding: 5px 10px; }
+    .time { font-size: 0.8em; color: gray; margin-left: 5px; }
+    .reports { font-size: 0.8em; color: red; margin-left: 10px; }
+    p { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h2>Global Chat</h2>
+  <div><b>Exam Name:</b> <span id="examName">Loading...</span></div>
+  <div>
+    <b>Users in this Test:</b> <span id="userCount">0</span>
+  </div>
+  <div>
+    <b>Your Total Reports:</b> <span id="totalReports">0</span>
+  </div>
+  <br>
+  <input id="globalMsg" placeholder="Type global message">
+  <button onclick="sendGlobal()">Send</button>
+  <div id="globalChat"></div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const BACKEND_URL = "localhost:5000"; 
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZTM4ZmE4MGM2ZjZlM2JhOGZlN2FmMyIsImlhdCI6MTc1OTkyODA2MywiZXhwIjoxNzYwNTMyODYzfQ.qe-OfwJR85mwRJaKmt33dnz9W89OkQnRIOAqIZckNbA";
+    const testId = "68e38f620c6f6e3ba8fe7aa9"; // Current testId
+
+    const currentUserId = JSON.parse(atob(token.split('.')[1])).id;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const socket = io(BACKEND_URL, { path: "/api/v1/socket.io", auth: { token } });
+
+      socket.on("connect", () => {
+        socket.emit("loadTestGlobalMessages", testId);
+      });
+
+      function appendMessage(msg){
+        const chat = document.getElementById("globalChat");
+        let reportText = "";
+
+        if(msg.userId === currentUserId){
+          reportText = `<span class="reports">[Your reports: ${msg.reports || 0}]</span>`;
+        } else if(msg.reports > 0){
+          reportText = `<span class="reports">[Reports: ${msg.reports}]</span>`;
+        }
+
+        chat.innerHTML += `<p>
+          <b>${msg.user}:</b> ${msg.message} 
+          <span class="time">(${msg.messageTime})</span>
+          ${reportText}
+        </p>`;
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      socket.on("loadOldMessages", (data) => {
+        const { examName, messages, userCount, totalReports, isBlocked } = data;
+
+        // ✅ Set exam name
+        document.getElementById("examName").innerText = examName;
+
+        document.getElementById("userCount").innerText = userCount;
+        document.getElementById("totalReports").innerText = totalReports;
+
+        const inputBox = document.getElementById("globalMsg");
+        inputBox.disabled = isBlocked;
+        if(isBlocked) alert(`You are blocked from sending messages (Total Reports: ${totalReports})`);
+
+        messages.forEach(msg => appendMessage(msg));
+      });
+
+      socket.on("receiveMessageGlobal", (data) => {
+        if(data.testId !== testId) return;
+        appendMessage(data);
+        document.getElementById("userCount").innerText = data.userCount || 0;
+        document.getElementById("globalMsg").disabled = data.isBlocked || false;
+      });
+
+      socket.on("blockedStatus", (data) => {
+        alert(`${data.message} (Total Reports: ${data.totalReports})`);
+        document.getElementById("globalMsg").disabled = true;
+      });
+
+      window.sendGlobal = function() {
+        const msg = document.getElementById("globalMsg").value.trim();
+        if(!msg) return;
+        const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        socket.emit("sendMessageGlobal", { message: msg, role: "user", messageTime, testId });
+        document.getElementById("globalMsg").value = '';
+      };
+    });
+  </script>
+</body>
+</html>

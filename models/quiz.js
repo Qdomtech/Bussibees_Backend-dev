@@ -1,0 +1,19 @@
+const mongoose = require('mongoose');
+
+const QuizSchema = new mongoose.Schema({
+    testId:  { type: mongoose.Schema.Types.ObjectId, ref: 'GovernmentCourse' },
+    topicId: { type: mongoose.Schema.Types.ObjectId,ref: 'GovernmentCourse' },
+    topicName: { type: String, required: true }, 
+   question:{ type: String, required: true },
+   option1:{ type: String, required: true },
+   option2:{ type: String, required: true },
+   option3:{ type: String, required: true },
+   option4:{ type: String, required: true },
+   answer:{ type: String },
+   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+module.exports = mongoose.model('Quiz', QuizSchema); 

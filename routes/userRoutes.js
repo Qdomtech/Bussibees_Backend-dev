@@ -1,0 +1,20 @@
+const express = require('express');
+const router = express.Router();
+const UserController = require('../controllers/userController');
+const auth = require('../middleware/auth');
+router.post('/registerStudent', UserController.registerStudent);
+
+router.post('/verifyOTP', UserController.verifyMobileOTP);
+router.post('/verifyEmailOTP', UserController.verifyEmailOTP);
+router.post('/login', UserController.login);
+router.get('/LoggedInUser',auth, UserController.LoggedInUser);
+router.put('/updateExamType',auth, UserController.updateExamType);
+router.put('/updateProfile/:id',UserController.updateProfile);
+router.get('/verificationStatus/:id',UserController.verificationStatus);
+router.post('/resend-otp/',UserController.resendOTP);
+router.post('/forget-otp/',UserController.ForgotPassword);
+router.post('/verifyOtpAndLogin/',UserController.verifyOtpAndLogin);
+router.get('/userProfile/',auth,UserController.userProfile);
+router.put('/changePassword',auth, UserController.changePassword);
+router.get('/welcome',auth,UserController.welcomeMessage);
+module.exports = router;
