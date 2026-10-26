@@ -165,15 +165,13 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'User not found' });
     }
 
-    const isOtpValid =
-      (user.otp === otp && user.otpExpires > new Date()) ||
-      otp === '123456';
+    const isOtpValid = user.otp === otp && user.otpExpires > new Date();
 
     if (!isOtpValid) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
-    // Clear OTP (optional for default OTP use case)
+    // Clear OTP after successful verification
     user.otp = null;
     user.otpExpires = null;
     await user.save();
