@@ -24,6 +24,7 @@ const wishListRoutes = require('./routes/wishListRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const SkillRoutes = require('./routes/skillCourseRoutes');
 const BundleRoutes = require('./routes/bundleRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,8 +52,10 @@ app.use('/api/v1', wishListRoutes);
 app.use('/api/v1', chatRoutes);
 app.use('/api/v1', SkillRoutes);
 app.use('/api/v1', BundleRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use('/chat', express.static(path.join(__dirname, 'public')));
+app.use('/admin', express.static(path.join(__dirname, 'public/admin')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 

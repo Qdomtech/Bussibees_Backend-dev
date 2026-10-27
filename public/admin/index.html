@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bussibees Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --green: #16a34a;
+      --red: #dc2626;
+      --badge-bg: #ede9fe;
+      --badge-text: #4f46e5;
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── AUTH SCREENS ── */
+    .auth-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 16px;
+    }
+    .auth-card {
+      background: var(--surface); border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 36px; width: 100%; max-width: 400px;
+    }
+    .auth-card .logo { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+    .auth-card h2 { font-size: 18px; color: var(--text-muted); margin-bottom: 28px; font-weight: 400; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+    .form-group input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 14px; outline: none; transition: border .2s;
+    }
+    .form-group input:focus { border-color: var(--primary); }
+    .btn {
+      width: 100%; padding: 11px; background: var(--primary); color: #fff;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 12px; text-align: center; }
+    .success-msg { color: var(--green); font-size: 13px; margin-top: 12px; text-align: center; }
+
+    /* ── DASHBOARD ── */
+    #dashboardView { display: none; }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar .brand { font-size: 18px; font-weight: 700; color: var(--primary); }
+    .topbar .admin-info { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 12px; }
+    .logout-btn {
+      padding: 6px 14px; border: 1.5px solid var(--border); border-radius: 6px;
+      background: #fff; font-size: 13px; cursor: pointer; color: var(--text); transition: background .15s;
+    }
+    .logout-btn:hover { background: var(--bg); }
+
+    .main { padding: 28px 24px; max-width: 1300px; margin: 0 auto; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--surface); border-radius: 10px; padding: 20px 22px;
+      border: 1px solid var(--border);
+    }
+    .stat-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: var(--primary); margin-top: 6px; }
+
+    .table-card { background: var(--surface); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+    .table-header {
+      padding: 18px 20px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px;
+    }
+    .table-header h3 { font-size: 16px; font-weight: 600; }
+    .search-box {
+      padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; outline: none; width: 260px; transition: border .2s;
+    }
+    .search-box:focus { border-color: var(--primary); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead th {
+      background: #f8fafc; padding: 12px 14px; text-align: left;
+      font-weight: 600; color: var(--text-muted); font-size: 12px;
+      text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 12px 14px; vertical-align: middle; white-space: nowrap; }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-yes { background: #dcfce7; color: #15803d; }
+    .badge-no  { background: #fee2e2; color: #b91c1c; }
+    .badge-type { background: var(--badge-bg); color: var(--badge-text); }
+
+    .view-btn {
+      padding: 5px 12px; border: 1.5px solid var(--primary); color: var(--primary);
+      background: #fff; border-radius: 6px; font-size: 12px; cursor: pointer;
+      font-weight: 600; transition: background .15s;
+    }
+    .view-btn:hover { background: var(--badge-bg); }
+
+    .pagination {
+      padding: 14px 20px; display: flex; align-items: center;
+      justify-content: space-between; border-top: 1px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
+    }
+    .pagination .info { font-size: 13px; color: var(--text-muted); }
+    .page-btns { display: flex; gap: 6px; }
+    .page-btn {
+      padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 6px;
+      background: #fff; font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .page-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.4); z-index: 999;
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 12px; width: 100%; max-width: 560px;
+      max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.15);
+    }
+    .modal-head {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { font-size: 16px; font-weight: 600; }
+    .close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); line-height: 1; }
+    .modal-body { padding: 20px 24px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .detail-item .key { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 4px; }
+    .detail-item .val { font-size: 14px; font-weight: 500; }
+    .avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--primary); color: #fff; font-size: 20px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .auth-card { padding: 28px 20px; }
+      .main { padding: 16px; }
+      .search-box { width: 100%; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── LOGIN SCREEN ─── -->
+<div id="loginView" class="auth-wrap">
+  <div class="auth-card">
+    <div class="logo">Bussibees</div>
+    <h2>Admin Panel</h2>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" placeholder="admin@example.com" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" />
+    </div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Sign In</button>
+    <div id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- ─── OTP SCREEN ─── -->
+<div id="otpView" class="auth-wrap" style="display:none">
+  <div class="auth-card">
+    <div class="logo">Bussibees</div>
+    <h2>Verify OTP</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
+      A 6-digit OTP was sent to <strong id="otpEmailLabel"></strong>
+    </p>
+    <div class="form-group">
+      <label>Enter OTP</label>
+      <input type="text" id="otpCode" placeholder="123456" maxlength="6" />
+    </div>
+    <button class="btn" id="otpBtn" onclick="doVerifyOtp()">Verify & Continue</button>
+    <div id="otpMsg"></div>
+  </div>
+</div>
+
+<!-- ─── DASHBOARD ─── -->
+<div id="dashboardView">
+  <div class="topbar">
+    <span class="brand">Bussibees Admin</span>
+    <div class="admin-info">
+      <span id="adminEmailLabel"></span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="label">Total Users</div>
+        <div class="value" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Mobile Verified</div>
+        <div class="value" id="statMobile">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Email Verified</div>
+        <div class="value" id="statEmail">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Showing Page</div>
+        <div class="value" id="statPage">—</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h3>All Users</h3>
+        <input class="search-box" id="searchInput" type="text"
+               placeholder="Search name, email or mobile..."
+               oninput="onSearch()" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th>Student Type</th>
+              <th>Exam Type</th>
+              <th>Mobile Verified</th>
+              <th>Email Verified</th>
+              <th>Location</th>
+              <th>Earning</th>
+              <th>Joined</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="12" class="loading">Loading users…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <div class="info" id="paginationInfo"></div>
+        <div class="page-btns" id="pageButtons"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── USER DETAIL MODAL ─── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>User Detail</h3>
+      <button class="close-btn" onclick="closeModalDirect()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody">Loading…</div>
+  </div>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  // Change BASE_URL if your backend runs on a different port
+  const BASE_URL = window.location.origin.replace(':5173','').replace(':3000','');
+
+  // ─── STATE ─────────────────────────────────────────────────
+  let adminToken = localStorage.getItem('adminToken') || '';
+  let adminEmail = localStorage.getItem('adminEmail') || '';
+  let pendingEmail = '';
+  let currentPage = 1;
+  let totalPages = 1;
+  let searchTimer = null;
+
+  // ─── INIT ──────────────────────────────────────────────────
+  window.onload = () => {
+    if (adminToken) showDashboard();
+  };
+
+  // ─── LOGIN ─────────────────────────────────────────────────
+  async function doLogin() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const msg      = document.getElementById('loginMsg');
+    const btn      = document.getElementById('loginBtn');
+
+    if (!email || !password) { msg.className = 'error-msg'; msg.textContent = 'Email and password are required.'; return; }
+
+    btn.disabled = true; btn.textContent = 'Signing in…'; msg.textContent = '';
+    try {
+      const res  = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      pendingEmail = email;
+      document.getElementById('otpEmailLabel').textContent = email;
+      show('otpView');
+    } catch (e) {
+      msg.className = 'error-msg'; msg.textContent = e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Sign In';
+    }
+  }
+
+  async function doVerifyOtp() {
+    const otp = document.getElementById('otpCode').value.trim();
+    const msg = document.getElementById('otpMsg');
+    const btn = document.getElementById('otpBtn');
+
+    if (!otp) { msg.className = 'error-msg'; msg.textContent = 'Please enter the OTP.'; return; }
+
+    btn.disabled = true; btn.textContent = 'Verifying…'; msg.textContent = '';
+    try {
+      const res  = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, otp })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'OTP verification failed');
+
+      adminToken = data.token;
+      adminEmail = pendingEmail;
+      localStorage.setItem('adminToken', adminToken);
+      localStorage.setItem('adminEmail', adminEmail);
+      showDashboard();
+    } catch (e) {
+      msg.className = 'error-msg'; msg.textContent = e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = 'Verify & Continue';
+    }
+  }
+
+  function doLogout() {
+    adminToken = ''; adminEmail = '';
+    localStorage.removeItem('adminToken'); localStorage.removeItem('adminEmail');
+    show('loginView');
+  }
+
+  // ─── DASHBOARD ─────────────────────────────────────────────
+  function showDashboard() {
+    show('dashboardView');
+    document.getElementById('adminEmailLabel').textContent = adminEmail;
+    loadUsers(1);
+  }
+
+  async function loadUsers(page) {
+    currentPage = page;
+    const search = document.getElementById('searchInput')?.value.trim() || '';
+    const tbody  = document.getElementById('usersTableBody');
+    tbody.innerHTML = '<tr><td colspan="12" class="loading">Loading…</td></tr>';
+
+    try {
+      const url = `${BASE_URL}/api/admin/users?page=${page}&limit=15${search ? '&search=' + encodeURIComponent(search) : ''}`;
+      const res  = await fetch(url, { headers: { Authorization: 'Bearer ' + adminToken } });
+
+      if (res.status === 401 || res.status === 403) { doLogout(); return; }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
+      renderTable(data.data, data.pagination);
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="12" class="loading" style="color:var(--red)">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderTable(users, pag) {
+    totalPages = pag.totalPages;
+    const start = (pag.page - 1) * pag.limit;
+    const tbody = document.getElementById('usersTableBody');
+
+    // Update stat cards
+    document.getElementById('statTotal').textContent  = pag.total;
+    document.getElementById('statPage').textContent   = `${pag.page} / ${pag.totalPages}`;
+
+    // Count verified in current page (approximate; full count needs another API)
+    const mobileV = users.filter(u => u.isMobileVerified).length;
+    const emailV  = users.filter(u => u.isEmailVerified).length;
+    document.getElementById('statMobile').textContent = mobileV + '/' + users.length;
+    document.getElementById('statEmail').textContent  = emailV  + '/' + users.length;
+
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="12" class="loading">No users found.</td></tr>';
+      renderPagination(pag);
+      return;
+    }
+
+    tbody.innerHTML = users.map((u, i) => {
+      const name     = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || '—';
+      const location = [u.city, u.state, u.country].filter(Boolean).join(', ') || '—';
+      const joined   = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      return `
+        <tr>
+          <td style="color:var(--text-muted)">${start + i + 1}</td>
+          <td style="font-weight:600">${esc(name)}</td>
+          <td>${esc(u.email || '—')}</td>
+          <td>${esc(u.mobileNo || '—')}</td>
+          <td><span class="badge badge-type">${esc(u.studentType || '—')}</span></td>
+          <td><span class="badge badge-type">${esc(u.examType || '—')}</span></td>
+          <td><span class="badge ${u.isMobileVerified ? 'badge-yes' : 'badge-no'}">${u.isMobileVerified ? 'Yes' : 'No'}</span></td>
+          <td><span class="badge ${u.isEmailVerified  ? 'badge-yes' : 'badge-no'}">${u.isEmailVerified  ? 'Yes' : 'No'}</span></td>
+          <td>${esc(location)}</td>
+          <td>₹${(u.earning || 0).toLocaleString('en-IN')}</td>
+          <td>${joined}</td>
+          <td><button class="view-btn" onclick="viewUser('${u._id}')">View</button></td>
+        </tr>`;
+    }).join('');
+
+    renderPagination(pag);
+  }
+
+  function renderPagination(pag) {
+    document.getElementById('paginationInfo').textContent =
+      `Showing ${((pag.page-1)*pag.limit)+1}–${Math.min(pag.page*pag.limit, pag.total)} of ${pag.total} users`;
+
+    const wrap = document.getElementById('pageButtons');
+    let html = `<button class="page-btn" onclick="loadUsers(${pag.page-1})" ${pag.page<=1?'disabled':''}>← Prev</button>`;
+
+    // Show up to 5 page numbers
+    const start = Math.max(1, pag.page - 2);
+    const end   = Math.min(pag.totalPages, start + 4);
+    for (let p = start; p <= end; p++) {
+      html += `<button class="page-btn ${p===pag.page?'active':''}" onclick="loadUsers(${p})">${p}</button>`;
+    }
+    html += `<button class="page-btn" onclick="loadUsers(${pag.page+1})" ${pag.page>=pag.totalPages?'disabled':''}>Next →</button>`;
+    wrap.innerHTML = html;
+  }
+
+  // ─── SEARCH ────────────────────────────────────────────────
+  function onSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadUsers(1), 400);
+  }
+
+  // ─── USER DETAIL MODAL ─────────────────────────────────────
+  async function viewUser(id) {
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('modalBody').innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted)">Loading…</p>';
+
+    try {
+      const res  = await fetch(`${BASE_URL}/api/admin/users/${id}`, { headers: { Authorization: 'Bearer ' + adminToken } });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
+      const u    = data.data;
+      const name = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || '—';
+      const initials = ((u.firstName||'?')[0] + (u.lastName||'?')[0]).toUpperCase();
+
+      document.getElementById('modalBody').innerHTML = `
+        <div class="avatar">${initials}</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px">${esc(name)}</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">ID: ${u._id}</div>
+        <div class="detail-grid">
+          ${field('Email',           u.email || '—')}
+          ${field('Mobile',          u.mobileNo || '—')}
+          ${field('Student Type',    u.studentType || '—')}
+          ${field('Exam Type',       u.examType || '—')}
+          ${field('Mobile Verified', u.isMobileVerified ? '✅ Yes' : '❌ No')}
+          ${field('Email Verified',  u.isEmailVerified  ? '✅ Yes' : '❌ No')}
+          ${field('Country',         u.country || '—')}
+          ${field('State',           u.state   || '—')}
+          ${field('City',            u.city    || '—')}
+          ${field('Pincode',         u.pincode || '—')}
+          ${field('Earning',         '₹' + (u.earning || 0).toLocaleString('en-IN'))}
+          ${field('Joined',          u.createdAt ? new Date(u.createdAt).toLocaleString('en-IN') : '—')}
+          ${field('Welcome Shown',   u.showWelcomeMessage ? 'Pending' : 'Shown')}
+          ${field('Category',        u.category?.name || u.category || '—')}
+        </div>`;
+    } catch (e) {
+      document.getElementById('modalBody').innerHTML = `<p style="color:var(--red)">${e.message}</p>`;
+    }
+  }
+
+  function field(key, val) {
+    return `<div class="detail-item"><div class="key">${key}</div><div class="val">${esc(String(val))}</div></div>`;
+  }
+
+  function closeModal(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+  }
+  function closeModalDirect() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  // ─── HELPERS ───────────────────────────────────────────────
+  function show(viewId) {
+    ['loginView','otpView','dashboardView'].forEach(id => {
+      document.getElementById(id).style.display = id === viewId ? (id === 'dashboardView' ? 'block' : 'flex') : 'none';
+    });
+  }
+
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (document.getElementById('loginView').style.display !== 'none') doLogin();
+      else if (document.getElementById('otpView').style.display !== 'none') doVerifyOtp();
+    }
+  });
+</script>
+</body>
+</html>

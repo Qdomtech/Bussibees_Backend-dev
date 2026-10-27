@@ -17,8 +17,8 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'noreply@bussibees.com',
-    pass: 'wvyw verd iwqa rvic'
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
   }
 });
 
@@ -302,7 +302,7 @@ exports.registerStudent = async (req, res) => {
       if (email) {
         try {
           await transporter.sendMail({
-            from: '"Bussibees" <noreply@bussibees.com>',
+            from: process.env.MAIL_USER,
             to: email,
             subject: "Your OTP for Registration",
             text: `Your OTP for registration is ${otp}. It will expire in 5 minutes.`,
@@ -886,28 +886,17 @@ exports.resendOTP = async (req, res) => {
         { otp: { code: otp, expiration }, isEmailVerified: false }
       );
 
-      try {
-        await transporter.sendMail({
-          from: "noreply@bussibees.com",
-          to: normalizedEmail, // 👈 lowercase wali email bhejenge
-          subject: "Your OTP for Email Verification",
-          html: `
-            <p>Hello,</p>
-            <p>Your OTP is <b>${otp}</b>.</p>
-            <p>This OTP is valid for <b>5 minutes</b>.</p>
-          `,
-        });
-        console.log(`📧 Email OTP sent to ${normalizedEmail}`);
-      } catch (err) {
-        console.error("❌ Email send error:", err.message);
-        otp = "1234";
-        await clientUserModule.findByIdAndUpdate(
-          userId,
-          { otp: { code: otp, expiration }, isEmailVerified: false },
-          { new: true }
-        );
-        console.log(`✅ Using fallback OTP (1234) for ${normalizedEmail}`);
-      }
+      await transporter.sendMail({
+        from: process.env.MAIL_USER,
+        to: normalizedEmail,
+        subject: "Your OTP for Email Verification",
+        html: `
+          <p>Hello,</p>
+          <p>Your OTP is <b>${otp}</b>.</p>
+          <p>This OTP is valid for <b>5 minutes</b>.</p>
+        `,
+      });
+      console.log(`📧 Email OTP sent to ${normalizedEmail}`);
 
       return res.status(200).json({ message: "Email OTP resent successfully" });
     }
